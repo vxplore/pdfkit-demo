@@ -303,10 +303,13 @@ export class Pdf3Controller {
 
     const bottomMargin = 20;
 
-    const firstPageTableHeight =
-      doc.page.height - this.pdfService.invoiceHeight;
+    const headerHeight = this.pdfService.headerHeight;
+    const invoiceHeight = this.pdfService.invoiceHeight;
+    const footerHeight = this.pdfService.footerHeight;
 
-    const otherPageTableHeight = doc.page.height - this.pdfService.headerHeight;
+    let firstPageTableHeight = doc.page.height - invoiceHeight - bottomMargin;
+
+    let otherPageTableHeight = doc.page.height - headerHeight - bottomMargin;
 
     const nameColWidth = 240;
     let height = 0;
@@ -315,56 +318,59 @@ export class Pdf3Controller {
       itemEndCount: number;
       height: number;
       page: number;
+      showFooter?: boolean;
     }[] = [];
     let page = 1;
     let itemStartCount = 0;
-    data.products.forEach((item, i) => {
-      height +=
-        doc.heightOfString(item.desc ? item.desc : item.name, {
-          width: nameColWidth,
-        }) + 10;
 
-      if (page === 1 && height > firstPageTableHeight) {
-        pageConfig.push({
-          itemStartCount,
-          itemEndCount: i,
-          page,
-          height: Math.floor(height),
-        });
-        itemStartCount = i;
-        height = 0;
-        ++page;
-      } else {
-        if (height > otherPageTableHeight) {
+    doc.fontSize(8);
+    data.products.forEach((item, i) => {
+      const descHeight = doc.heightOfString(item.desc, {
+        width: nameColWidth,
+      });
+      const nameHeight = doc.heightOfString(item.name, {
+        width: nameColWidth,
+      });
+      height += descHeight + nameHeight + 10;
+
+      if (i === data.products.length - 1) {
+        if (height < firstPageTableHeight) {
+          if (height < firstPageTableHeight - invoiceHeight) {
+            pageConfig.push({
+              itemStartCount,
+              itemEndCount: i,
+              showFooter: true,
+              page: 1,
+              height: Math.floor(height),
+            });
+          } else {
+            pageConfig.push({
+              itemStartCount,
+              itemEndCount: i,
+              page: 1,
+              showFooter: false,
+              height: Math.floor(height),
+            });
+          }
+          itemStartCount = i;
+          height = 0;
+          ++page;
+        }
+        if (height > firstPageTableHeight && height < otherPageTableHeight) {
           pageConfig.push({
             itemStartCount,
             itemEndCount: i,
-            page,
+            page: 2,
             height: Math.floor(height),
           });
           itemStartCount = i;
           height = 0;
           ++page;
         }
-        if (i === data.products.length - 1) {
-          pageConfig.push({
-            itemStartCount,
-            itemEndCount: data.products.length,
-            height,
-            page,
-          });
-        }
       }
     });
 
-    console.log({
-      header: this.pdfService.headerHeight,
-      invoice: this.pdfService.invoiceHeight,
-      first: firstPageTableHeight,
-      other: otherPageTableHeight,
-      total: doc.page.height,
-      pageConfig,
-    });
+    console.log(pageConfig);
     pageConfig.forEach((d, i) => {
       const tableData = {
         ...tableMandatoryData,

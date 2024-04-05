@@ -205,7 +205,7 @@ export class Pdf3Service {
     doc.rect(0, ts, doc.page.width, m * 2).fillAndStroke('#ddd', 'black');
     doc.font('Helvetica-Bold').fill('black').fontSize(8);
 
-    let th = tableHeight;
+    let th = tableHeight + tableStart;
     let w = 20;
     const slWidth = 20;
     doc.text('SL No.', m / 2, ts + m / 2, { align: 'center', width: slWidth });
@@ -322,120 +322,122 @@ export class Pdf3Service {
       width: totalWidth,
     });
 
-    // // ######## Table values ########
-    // tableData.products.forEach((item, i) => {
-    //   let ls = m / 2;
-    //   doc.font('Helvetica');
-    //   doc.text(item.slNo, ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: slWidth,
+    // ######## Table values ########
+    ts = ts + m * 2.5;
+    tableData.products.forEach((item, i) => {
+      let ls = m / 2;
+      doc.font('Helvetica');
+      doc.text(item.slNo, ls, ts, {
+        align: 'center',
+        width: slWidth,
+      });
+      ls += slWidth;
+      doc.font('Helvetica-Bold');
+      doc.text(item.name, ls + 8, ts, {
+        width: nameWidth,
+      });
+      ls += nameWidth;
+      doc.font('Helvetica');
+      doc.text(item.HSN, ls, ts, {
+        align: 'center',
+        width: hsnWidth,
+      });
+      ls += hsnWidth;
+      doc.text(`${item.qty} ${item.unit}`, ls, ts, {
+        align: 'center',
+        width: qtyWidth,
+      });
+      ls += qtyWidth;
+      doc.text(item.rate.toFixed(2), ls, ts, {
+        align: 'center',
+        width: rateWidth,
+      });
+      ls += rateWidth;
+      doc.text(item.taxable.toFixed(2), ls, ts, {
+        align: 'center',
+        width: taxableWidth,
+      });
+      ls += taxableWidth;
+      doc.text(item.tax, ls, ts, {
+        align: 'center',
+        width: taxWidth,
+      });
+      ls += taxWidth;
+      doc.text(item.amount.toFixed(2), ls, ts, {
+        align: 'center',
+        width: amountWidth,
+      });
+      ls += amountWidth;
+      doc.text(item.total.toFixed(2), ls, ts, {
+        align: 'center',
+        width: totalWidth,
+      });
+      if (item.desc) {
+        doc.fillColor('#666').text(item.desc, m * 1.75, ts + 10, {
+          width: nameWidth,
+          lineBreak: true,
+        });
+      }
+      const height = doc.heightOfString(item.desc ? item.desc : item.name, {
+        width: nameWidth,
+      });
+      doc.fillColor('black');
+      ts += height + 12;
+      doc.font('Helvetica-Bold');
+    });
+    // ##############################
+
+    //   doc
+    //     .moveTo(0, m * 18.5)
+    //     .lineTo(doc.page.width, m * 18.5)
+    //     .stroke();
+
+    //   doc.moveTo(0, th).lineTo(doc.page.width, th).stroke();
+    //   doc
+    //     .moveTo(0, th + m)
+    //     .lineTo(doc.page.width, th + m)
+    //     .stroke();
+
+    //   w = 0;
+    //   const btWidth = slWidth + nameWidth;
+    //   doc.fontSize(12).text('Total', w, th + 8, {
+    //     align: 'right',
+    //     width: btWidth,
     //   });
-    //   ls += slWidth;
-    //   doc.font('Helvetica-Bold');
-    //   doc.text(item.name, ls + 8, tableStartPoint, {
-    //     width: nameWidth,
-    //   });
-    //   ls += nameWidth;
-    //   doc.font('Helvetica');
-    //   doc.text(item.HSN, ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: hsnWidth,
-    //   });
-    //   ls += hsnWidth;
-    //   doc.text(`${item.qty} ${item.unit}`, ls, tableStartPoint, {
+    //   doc
+    //     .moveTo(btWidth + m / 2, th)
+    //     .lineTo(btWidth + m / 2, th + m)
+    //     .stroke();
+
+    //   w += btWidth + hsnWidth;
+    //   doc.text('2.0', w, th + 8, {
     //     align: 'center',
     //     width: qtyWidth,
     //   });
-    //   ls += qtyWidth;
-    //   doc.text(item.rate.toFixed(2), ls, tableStartPoint, {
-    //     align: 'center',
+    //   w += qtyWidth;
+    //   doc.text('1150', w, th + 8, {
+    //     align: 'right',
     //     width: rateWidth,
     //   });
-    //   ls += rateWidth;
-    //   doc.text(item.taxable.toFixed(2), ls, tableStartPoint, {
-    //     align: 'center',
+    //   w += rateWidth;
+    //   doc.text('1150', w, th + 8, {
+    //     align: 'right',
     //     width: taxableWidth,
     //   });
-    //   ls += taxableWidth;
-    //   doc.text(item.tax, ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: taxWidth,
-    //   });
-    //   ls += taxWidth;
-    //   doc.text(item.amount.toFixed(2), ls, tableStartPoint, {
-    //     align: 'center',
+
+    //   w += taxableWidth + taxWidth;
+    //   doc.text('1150', w, th + 8, {
+    //     align: 'right',
     //     width: amountWidth,
     //   });
-    //   ls += amountWidth;
-    //   doc.text(item.total.toFixed(2), ls, tableStartPoint, {
-    //     align: 'center',
+    //   w += m;
+    //   doc.text('1150', w, th + 8, {
+    //     align: 'right',
     //     width: totalWidth,
     //   });
-    //   if (item.desc) {
-    //     doc.fillColor('#666').text(item.desc, m * 1.75, tableStartPoint + 8, {
-    //       width: nameWidth,
-    //       lineBreak: true,
-    //     });
-    //   }
-    //   const height = doc.heightOfString(item.desc ? item.desc : item.name, {
-    //     width: nameWidth,
-    //   });
-    //   doc.fillColor('black');
-    //   tableStartPoint += height + 10;
-    //   doc.font('Helvetica-Bold');
-    // });
-    // // ##############################
-
-    // doc
-    //   .moveTo(0, m * 18.5)
-    //   .lineTo(doc.page.width, m * 18.5)
-    //   .stroke();
-
-    // doc.moveTo(0, th).lineTo(doc.page.width, th).stroke();
-    // doc
-    //   .moveTo(0, th + m)
-    //   .lineTo(doc.page.width, th + m)
-    //   .stroke();
-
-    // w = 0;
-    // const btWidth = slWidth + nameWidth;
-    // doc.fontSize(12).text('Total', w, th + 8, {
-    //   align: 'right',
-    //   width: btWidth,
-    // });
-    // doc
-    //   .moveTo(btWidth + m / 2, th)
-    //   .lineTo(btWidth + m / 2, th + m)
-    //   .stroke();
-
-    // w += btWidth + hsnWidth;
-    // doc.text('2.0', w, th + 8, {
-    //   align: 'center',
-    //   width: qtyWidth,
-    // });
-    // w += qtyWidth;
-    // doc.text('1150', w, th + 8, {
-    //   align: 'right',
-    //   width: rateWidth,
-    // });
-    // w += rateWidth;
-    // doc.text('1150', w, th + 8, {
-    //   align: 'right',
-    //   width: taxableWidth,
-    // });
-
-    // w += taxableWidth + taxWidth;
-    // doc.text('1150', w, th + 8, {
-    //   align: 'right',
-    //   width: amountWidth,
-    // });
-    // w += m;
-    // doc.text('1150', w, th + 8, {
-    //   align: 'right',
-    //   width: totalWidth,
-    // });
   }
 
+  public footerHeight = this.m * 12;
   generateFooter(doc, tableHeight: number, tableData: TableDataType) {
     const m = this.m;
     let th = tableHeight;

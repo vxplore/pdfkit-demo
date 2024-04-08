@@ -218,7 +218,7 @@ const data = {
       total: 120,
     },
     {
-      slNo: 15,
+      slNo: 14,
       name: 'Automatic saw',
       desc: 'Claw hammer (Black and Chrome)',
       HSN: '1234',
@@ -283,6 +283,17 @@ const data = {
       total: 120,
     },
   ],
+  billDetails: {
+    totalQuantity: 180,
+    totalRate: 1800,
+    totalTaxableValue: 1800,
+    igst: 180,
+    totalTax: 180,
+    totalAmount: 1800,
+    grandTotal: 1980,
+    grandTotalInWords: 'One hundred eighty eight rupees only',
+    reverseChargeGst: 0,
+  },
 };
 export type TableDataType = typeof data;
 
@@ -299,6 +310,7 @@ export class Pdf3Controller {
       companyInfo: data.companyInfo,
       customerInfo: data.customerInfo,
       invoiceDetails: data.invoiceDetails,
+      billDetails: data.billDetails,
     };
 
     const bottomMargin = 20;
@@ -307,18 +319,20 @@ export class Pdf3Controller {
     const invoiceHeight = this.pdfService.invoiceHeight;
     const footerHeight = this.pdfService.footerHeight;
 
-    let firstPageTableHeight = doc.page.height - invoiceHeight - bottomMargin;
+    const firstPageTableHeight = doc.page.height - invoiceHeight - bottomMargin;
 
-    let otherPageTableHeight = doc.page.height - headerHeight - bottomMargin;
+    const otherPageTableHeight =
+      doc.page.height - headerHeight - footerHeight - bottomMargin;
 
     const nameColWidth = 240;
     let height = 0;
-    let pageConfig: {
+    const pageConfig: {
       itemStartCount: number;
       itemEndCount: number;
       height: number;
       page: number;
       showFooter?: boolean;
+      showInvoice?: boolean;
     }[] = [];
     let page = 1;
     let itemStartCount = 0;
@@ -333,75 +347,87 @@ export class Pdf3Controller {
       });
       height += descHeight + nameHeight + 10;
 
-      if (i === data.products.length - 1) {
-        if (height < firstPageTableHeight) {
-          if (height < firstPageTableHeight - invoiceHeight) {
-            pageConfig.push({
-              itemStartCount,
-              itemEndCount: i,
-              showFooter: true,
-              page: 1,
-              height: Math.floor(height),
-            });
-          } else {
-            pageConfig.push({
-              itemStartCount,
-              itemEndCount: i,
-              page: 1,
-              showFooter: false,
-              height: Math.floor(height),
-            });
-          }
-          itemStartCount = i;
-          height = 0;
-          ++page;
-        }
-        if (height > firstPageTableHeight && height < otherPageTableHeight) {
+      if (
+        i === data.products.length - 1 &&
+        height < firstPageTableHeight - footerHeight &&
+        page === 1
+      ) {
+        pageConfig.push({
+          itemStartCount,
+          itemEndCount: i + 1,
+          height,
+          page,
+          showInvoice: true,
+          showFooter: true,
+        });
+      } else {
+        if (
+          height > firstPageTableHeight - bottomMargin &&
+          height < firstPageTableHeight &&
+          page === 1
+        ) {
           pageConfig.push({
             itemStartCount,
             itemEndCount: i,
-            page: 2,
             height: Math.floor(height),
+            page,
+            showInvoice: true,
+            showFooter: false,
           });
-          itemStartCount = i;
           height = 0;
+          itemStartCount = i;
           ++page;
+        } else if (i === data.products.length - 1) {
+          pageConfig.push({
+            itemStartCount,
+            itemEndCount: i + 1,
+            height: Math.floor(height),
+            page,
+            showInvoice: false,
+            showFooter: true,
+          });
         }
       }
     });
 
-    console.log(pageConfig);
+    console.log({
+      first: firstPageTableHeight,
+      other: otherPageTableHeight,
+      height,
+      length: data.products.length,
+      pageConfig,
+    });
     pageConfig.forEach((d, i) => {
       const tableData = {
         ...tableMandatoryData,
         products: data.products.slice(d.itemStartCount, d.itemEndCount),
       };
-      if (d.page === 1) {
-        this.pdfService.generateHeader(doc, tableData);
-        this.pdfService.generateInvoiceData(doc, tableData);
-        this.pdfService.generateTable(
+
+      this.pdfService.generateHeader(doc, tableData);
+
+      d.showInvoice && this.pdfService.generateInvoiceData(doc, tableData);
+
+      const ts = d.showInvoice
+        ? this.pdfService.invoiceHeight
+        : this.pdfService.headerHeight;
+      const th = d.height + this.pdfService.tableHeaderHeight;
+      this.pdfService.generateTable(doc, ts, th, tableData, d.showFooter);
+
+      d.showFooter &&
+        this.pdfService.generateFooter(
           doc,
-          this.pdfService.invoiceHeight,
-          d.height,
+          d.showInvoice
+            ? this.pdfService.invoiceHeight + d.height + bottomMargin * 5
+            : this.pdfService.headerHeight + d.height + bottomMargin * 5,
           tableData,
         );
-      } else {
-        this.pdfService.generateHeader(doc, tableData);
-        this.pdfService.generateTable(
-          doc,
-          this.pdfService.headerHeight,
-          d.height,
-          tableData,
-        );
-        // this.pdfService.generateFooter(doc, d.height, tableData);
-      }
 
       i !== pageConfig.length - 1 && doc.addPage();
     });
 
     const range = doc.bufferedPageRange();
-    let startPage = range.start;
-    let endPage = range.start + range.count;
+    const startPage = range.start;
+    const endPage = range.start + range.count;
     for (let i = startPage; i < endPage; i++) {
       doc.switchToPage(i);
       doc.fillColor('#666').text(`Page ${i + 1}`, 10, doc.page.height - 16, {

@@ -319,7 +319,8 @@ export class Pdf3Controller {
     const invoiceHeight = this.pdfService.invoiceHeight;
     const footerHeight = this.pdfService.footerHeight;
 
-    const firstPageTableHeight = doc.page.height - invoiceHeight - bottomMargin;
+    const firstPageTableHeight =
+      doc.page.height - invoiceHeight - bottomMargin * 3;
 
     const otherPageTableHeight =
       doc.page.height - headerHeight - footerHeight - bottomMargin;
@@ -337,6 +338,7 @@ export class Pdf3Controller {
     let page = 1;
     let itemStartCount = 0;
 
+    const columnGap = 10;
     doc.fontSize(8);
     data.products.forEach((item, i) => {
       const descHeight = doc.heightOfString(item.desc, {
@@ -345,14 +347,14 @@ export class Pdf3Controller {
       const nameHeight = doc.heightOfString(item.name, {
         width: nameColWidth,
       });
-      height += descHeight + nameHeight + 10;
+      height += descHeight + nameHeight + columnGap;
 
       if (
         i === data.products.length - 1 &&
         height < firstPageTableHeight - footerHeight &&
         page === 1
       ) {
-        pageConfig.push({
+        return pageConfig.push({
           itemStartCount,
           itemEndCount: i + 1,
           height,
@@ -361,11 +363,7 @@ export class Pdf3Controller {
           showFooter: true,
         });
       } else {
-        if (
-          height > firstPageTableHeight - bottomMargin &&
-          height < firstPageTableHeight &&
-          page === 1
-        ) {
+        if (height > firstPageTableHeight && page === 1) {
           pageConfig.push({
             itemStartCount,
             itemEndCount: i,
@@ -391,6 +389,7 @@ export class Pdf3Controller {
     });
 
     console.log({
+      headerHeight,
       first: firstPageTableHeight,
       other: otherPageTableHeight,
       height,
@@ -411,14 +410,22 @@ export class Pdf3Controller {
         ? this.pdfService.invoiceHeight
         : this.pdfService.headerHeight;
       const th = d.height + this.pdfService.tableHeaderHeight;
-      this.pdfService.generateTable(doc, ts, th, tableData, d.showFooter);
+
+      this.pdfService.generateTable(
+        doc,
+        ts,
+        th,
+        columnGap,
+        tableData,
+        d.showFooter,
+      );
 
       d.showFooter &&
         this.pdfService.generateFooter(
           doc,
           d.showInvoice
-            ? this.pdfService.invoiceHeight + d.height + bottomMargin * 5
-            : this.pdfService.headerHeight + d.height + bottomMargin * 5,
+            ? this.pdfService.invoiceHeight + d.height + bottomMargin * 4
+            : this.pdfService.headerHeight + d.height + bottomMargin * 4,
           tableData,
         );
 
@@ -428,13 +435,16 @@ export class Pdf3Controller {
     const range = doc.bufferedPageRange();
     const startPage = range.start;
     const endPage = range.start + range.count;
-    for (let i = startPage; i < endPage; i++) {
-      doc.switchToPage(i);
-      doc.fillColor('#666').text(`Page ${i + 1}`, 10, doc.page.height - 16, {
-        width: doc.page.width,
-        align: 'center',
-      });
+    if (range.count > 1) {
+      for (let i = startPage; i < endPage; i++) {
+        doc.switchToPage(i);
+        doc.fillColor('#666').text(`Page ${i + 1}`, 10, doc.page.height - 10, {
+          width: doc.page.width,
+          align: 'center',
+        });
+      }
     }
+    console.log(range);
     doc.end();
 
     return 'Reload page to generate pdf';

@@ -5,6 +5,7 @@ import { TableDataType } from './pdf3.controller';
 export class Pdf3Service {
   constructor() {}
   private m = 20;
+
   generateHeader(doc, tableData: TableDataType) {
     const m = this.m;
     doc
@@ -198,16 +199,19 @@ export class Pdf3Service {
     doc,
     tableStart: number,
     tableHeight: number,
+    columnGap: number,
     tableData: TableDataType,
     showFooter?: boolean,
   ) {
     const m = this.m;
     let ts = tableStart + m;
-
-    doc.rect(0, ts, doc.page.width, m * 2).fillAndStroke('#ddd', 'black');
+    const tableRectHeight = m * 2;
+    doc
+      .rect(0, ts, doc.page.width, tableRectHeight)
+      .fillAndStroke('#ddd', 'black');
     doc.font('Helvetica-Bold').fill('black').fontSize(8);
 
-    let th = tableHeight + tableStart;
+    let th = tableHeight + tableStart + tableRectHeight;
     let w = 20;
     const slWidth = 20;
 
@@ -325,7 +329,7 @@ export class Pdf3Service {
     });
 
     // ######## Table values ########
-    ts = ts + m * 2.5;
+    ts = ts + m * 2.2;
     tableData.products.forEach((item) => {
       let ls = m / 2;
       doc.font('Helvetica');
@@ -374,14 +378,14 @@ export class Pdf3Service {
         align: 'center',
         width: totalWidth,
       });
-      if (item.desc) {
-        doc.fillColor('#666').text(item.desc, m * 1.75, ts + 10, {
-          width: nameWidth,
-        });
-      }
       let height = doc.heightOfString(item.name, {
         width: nameWidth,
       });
+      if (item.desc) {
+        doc.fillColor('#666').text(item.desc, m * 1.75, ts + height, {
+          width: nameWidth,
+        });
+      }
 
       if (item.desc) {
         height += doc.heightOfString(item.desc, {
@@ -390,14 +394,14 @@ export class Pdf3Service {
       }
 
       doc.fillColor('black');
-      ts += height + 7;
+      ts += height + columnGap;
       doc.font('Helvetica-Bold');
     });
     doc.moveTo(0, th).lineTo(doc.page.width, th).stroke();
     // ##############################
 
     if (showFooter) {
-      th += m * 3;
+      // th += m * 3;
 
       doc.moveTo(0, th).lineTo(doc.page.width, th).stroke();
       doc
@@ -421,22 +425,41 @@ export class Pdf3Service {
         align: 'center',
         width: qtyWidth,
       });
+      doc
+        .moveTo(w + m / 2, th)
+        .lineTo(w + m / 2, th + m)
+        .stroke();
       w += qtyWidth;
       doc.text(tableData.billDetails.totalRate, w, th + 8, {
         align: 'right',
         width: rateWidth,
       });
+      doc
+        .moveTo(w + m / 2, th)
+        .lineTo(w + m / 2, th + m)
+        .stroke();
       w += rateWidth;
       doc.text(tableData.billDetails.totalTaxableValue, w, th + 8, {
         align: 'right',
         width: taxableWidth,
       });
-
+      doc
+        .moveTo(w + m / 2, th)
+        .lineTo(w + m / 2, th + m)
+        .stroke();
+      doc
+        .moveTo(w + taxableWidth + m / 2, th)
+        .lineTo(w + taxableWidth + m / 2, th + m)
+        .stroke();
       w += taxableWidth + taxWidth;
       doc.text(tableData.billDetails.totalTax, w, th + 8, {
         align: 'right',
         width: amountWidth,
       });
+      doc
+        .moveTo(w + amountWidth + m / 2, th)
+        .lineTo(w + amountWidth + m / 2, th + m)
+        .stroke();
       w += m;
       doc.text(tableData.billDetails.grandTotal, w, th + 8, {
         align: 'right',

@@ -193,11 +193,13 @@ export class Pdf3Service {
 
   public invoiceHeight = this.m * 14.5;
 
+  public tableHeaderHeight = this.m * 2;
   generateTable(
     doc,
     tableStart: number,
     tableHeight: number,
     tableData: TableDataType,
+    showFooter?: boolean,
   ) {
     const m = this.m;
     let ts = tableStart + m;
@@ -205,12 +207,12 @@ export class Pdf3Service {
     doc.rect(0, ts, doc.page.width, m * 2).fillAndStroke('#ddd', 'black');
     doc.font('Helvetica-Bold').fill('black').fontSize(8);
 
-    let th = tableHeight;
+    let th = tableHeight + tableStart;
     let w = 20;
     const slWidth = 20;
+
     doc.text('SL No.', m / 2, ts + m / 2, { align: 'center', width: slWidth });
     doc
-      .strokeColor('black')
       .moveTo(w + m / 2, ts)
       .lineTo(w + m / 2, th)
       .stroke();
@@ -322,130 +324,139 @@ export class Pdf3Service {
       width: totalWidth,
     });
 
-    // // ######## Table values ########
-    // tableData.products.forEach((item, i) => {
-    //   let ls = m / 2;
-    //   doc.font('Helvetica');
-    //   doc.text(item.slNo, ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: slWidth,
-    //   });
-    //   ls += slWidth;
-    //   doc.font('Helvetica-Bold');
-    //   doc.text(item.name, ls + 8, tableStartPoint, {
-    //     width: nameWidth,
-    //   });
-    //   ls += nameWidth;
-    //   doc.font('Helvetica');
-    //   doc.text(item.HSN, ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: hsnWidth,
-    //   });
-    //   ls += hsnWidth;
-    //   doc.text(`${item.qty} ${item.unit}`, ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: qtyWidth,
-    //   });
-    //   ls += qtyWidth;
-    //   doc.text(item.rate.toFixed(2), ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: rateWidth,
-    //   });
-    //   ls += rateWidth;
-    //   doc.text(item.taxable.toFixed(2), ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: taxableWidth,
-    //   });
-    //   ls += taxableWidth;
-    //   doc.text(item.tax, ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: taxWidth,
-    //   });
-    //   ls += taxWidth;
-    //   doc.text(item.amount.toFixed(2), ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: amountWidth,
-    //   });
-    //   ls += amountWidth;
-    //   doc.text(item.total.toFixed(2), ls, tableStartPoint, {
-    //     align: 'center',
-    //     width: totalWidth,
-    //   });
-    //   if (item.desc) {
-    //     doc.fillColor('#666').text(item.desc, m * 1.75, tableStartPoint + 8, {
-    //       width: nameWidth,
-    //       lineBreak: true,
-    //     });
-    //   }
-    //   const height = doc.heightOfString(item.desc ? item.desc : item.name, {
-    //     width: nameWidth,
-    //   });
-    //   doc.fillColor('black');
-    //   tableStartPoint += height + 10;
-    //   doc.font('Helvetica-Bold');
-    // });
-    // // ##############################
+    // ######## Table values ########
+    ts = ts + m * 2.5;
+    tableData.products.forEach((item) => {
+      let ls = m / 2;
+      doc.font('Helvetica');
+      doc.text(item.slNo, ls, ts, {
+        align: 'center',
+        width: slWidth,
+      });
+      ls += slWidth;
+      doc.font('Helvetica-Bold');
+      doc.text(item.name, ls + 8, ts, {
+        width: nameWidth,
+      });
+      ls += nameWidth;
+      doc.font('Helvetica');
+      doc.text(item.HSN, ls, ts, {
+        align: 'center',
+        width: hsnWidth,
+      });
+      ls += hsnWidth;
+      doc.text(`${item.qty} ${item.unit}`, ls, ts, {
+        align: 'center',
+        width: qtyWidth,
+      });
+      ls += qtyWidth;
+      doc.text(item.rate.toFixed(2), ls, ts, {
+        align: 'center',
+        width: rateWidth,
+      });
+      ls += rateWidth;
+      doc.text(item.taxable.toFixed(2), ls, ts, {
+        align: 'center',
+        width: taxableWidth,
+      });
+      ls += taxableWidth;
+      doc.text(item.tax, ls, ts, {
+        align: 'center',
+        width: taxWidth,
+      });
+      ls += taxWidth;
+      doc.text(item.amount.toFixed(2), ls, ts, {
+        align: 'center',
+        width: amountWidth,
+      });
+      ls += amountWidth;
+      doc.text(item.total.toFixed(2), ls, ts, {
+        align: 'center',
+        width: totalWidth,
+      });
+      if (item.desc) {
+        doc.fillColor('#666').text(item.desc, m * 1.75, ts + 10, {
+          width: nameWidth,
+        });
+      }
+      let height = doc.heightOfString(item.name, {
+        width: nameWidth,
+      });
 
-    // doc
-    //   .moveTo(0, m * 18.5)
-    //   .lineTo(doc.page.width, m * 18.5)
-    //   .stroke();
+      if (item.desc) {
+        height += doc.heightOfString(item.desc, {
+          width: nameWidth,
+        });
+      }
 
-    // doc.moveTo(0, th).lineTo(doc.page.width, th).stroke();
-    // doc
-    //   .moveTo(0, th + m)
-    //   .lineTo(doc.page.width, th + m)
-    //   .stroke();
+      doc.fillColor('black');
+      ts += height + 7;
+      doc.font('Helvetica-Bold');
+    });
+    doc.moveTo(0, th).lineTo(doc.page.width, th).stroke();
+    // ##############################
 
-    // w = 0;
-    // const btWidth = slWidth + nameWidth;
-    // doc.fontSize(12).text('Total', w, th + 8, {
-    //   align: 'right',
-    //   width: btWidth,
-    // });
-    // doc
-    //   .moveTo(btWidth + m / 2, th)
-    //   .lineTo(btWidth + m / 2, th + m)
-    //   .stroke();
+    if (showFooter) {
+      th += m * 3;
 
-    // w += btWidth + hsnWidth;
-    // doc.text('2.0', w, th + 8, {
-    //   align: 'center',
-    //   width: qtyWidth,
-    // });
-    // w += qtyWidth;
-    // doc.text('1150', w, th + 8, {
-    //   align: 'right',
-    //   width: rateWidth,
-    // });
-    // w += rateWidth;
-    // doc.text('1150', w, th + 8, {
-    //   align: 'right',
-    //   width: taxableWidth,
-    // });
+      doc.moveTo(0, th).lineTo(doc.page.width, th).stroke();
+      doc
+        .moveTo(0, th + m)
+        .lineTo(doc.page.width, th + m)
+        .stroke();
 
-    // w += taxableWidth + taxWidth;
-    // doc.text('1150', w, th + 8, {
-    //   align: 'right',
-    //   width: amountWidth,
-    // });
-    // w += m;
-    // doc.text('1150', w, th + 8, {
-    //   align: 'right',
-    //   width: totalWidth,
-    // });
+      w = 0;
+      const btWidth = slWidth + nameWidth;
+      doc.fontSize(12).text('Total', w, th + 8, {
+        align: 'right',
+        width: btWidth,
+      });
+      doc
+        .moveTo(btWidth + m / 2, th)
+        .lineTo(btWidth + m / 2, th + m)
+        .stroke();
+
+      w += btWidth + hsnWidth;
+      doc.text(tableData.billDetails.totalQuantity, w, th + 8, {
+        align: 'center',
+        width: qtyWidth,
+      });
+      w += qtyWidth;
+      doc.text(tableData.billDetails.totalRate, w, th + 8, {
+        align: 'right',
+        width: rateWidth,
+      });
+      w += rateWidth;
+      doc.text(tableData.billDetails.totalTaxableValue, w, th + 8, {
+        align: 'right',
+        width: taxableWidth,
+      });
+
+      w += taxableWidth + taxWidth;
+      doc.text(tableData.billDetails.totalTax, w, th + 8, {
+        align: 'right',
+        width: amountWidth,
+      });
+      w += m;
+      doc.text(tableData.billDetails.grandTotal, w, th + 8, {
+        align: 'right',
+        width: totalWidth,
+      });
+    }
   }
 
+  public footerHeight = this.m * 12;
   generateFooter(doc, tableHeight: number, tableData: TableDataType) {
     const m = this.m;
     let th = tableHeight;
-    let dw = doc.page.width / 1.75;
-    let rsp = doc.page.width / 1.75;
-    let rw = doc.page.width - rsp - m;
+    const dw = doc.page.width / 1.75;
+    const rsp = doc.page.width / 1.75;
+    const rw = doc.page.width - rsp - m;
     th = th + m * 2;
     let fh = th + 6;
-    let gth = th - m;
-    doc.moveTo(0, th).lineTo(dw, th).stroke();
+    const gth = th - m;
+
+    doc.moveTo(0, th).lineTo(doc.page.width, th).stroke();
     th = th + m;
     doc.moveTo(0, th).lineTo(dw, th).stroke();
     doc
@@ -459,7 +470,7 @@ export class Pdf3Service {
     doc.moveTo(0, th).lineTo(dw, th).stroke();
     doc
       .font('Helvetica')
-      .text('ONE THOUSAND TWO HUNDRED AND FIFTY', m / 2, th - m / 2, {
+      .text(tableData.billDetails.grandTotalInWords, m / 2, th - m / 2, {
         align: 'center',
         width: dw,
       });
@@ -508,46 +519,56 @@ export class Pdf3Service {
 
     th = gth + m;
 
-    doc.moveTo(rsp, th).lineTo(rsp, doc.page.height).stroke();
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
+    fh += m * 4.2;
+    doc.moveTo(rsp, th).lineTo(rsp, fh).stroke();
     doc
       .font('Helvetica-Bold')
       .fillColor('black')
       .text('Taxable Amount', rsp + m / 2, th + m / 2);
-    doc.text('1250', rsp, th + m / 2, { width: rw, align: 'right' });
+    doc.text(tableData.billDetails.totalTaxableValue, rsp, th + m / 2, {
+      width: rw,
+      align: 'right',
+    });
     th = th + m;
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
+    doc.moveTo(rsp, th).lineTo(doc.page.width, th).stroke();
 
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
     doc.text('Add:IGST', rsp + m / 2, th + m / 2);
-    doc.text('103.80', rsp, th + m / 2, { width: rw, align: 'right' });
+    doc.text(tableData.billDetails.igst, rsp, th + m / 2, {
+      width: rw,
+      align: 'right',
+    });
     th = th + m;
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
+    doc.moveTo(rsp, th).lineTo(doc.page.width, th).stroke();
 
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
     doc.text('Total Tax', rsp + m / 2, th + m / 2);
-    doc.text('103.80', rsp, th + m / 2, { width: rw, align: 'right' });
+    doc.text(tableData.billDetails.totalTax, rsp, th + m / 2, {
+      width: rw,
+      align: 'right',
+    });
     th = th + m;
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
+    doc.moveTo(rsp, th).lineTo(doc.page.width, th).stroke();
 
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
     doc.text('Total amount after tax', rsp + m / 2, th + m / 2);
     doc
       .fontSize(14)
-      .text('₹ 1258.00', rsp, th + m / 2, { width: rw, align: 'right' });
+      .text(`₹ ${tableData.billDetails.grandTotal}`, rsp, th + 6, {
+        width: rw,
+        align: 'right',
+      });
     th = th + m;
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
+    doc.moveTo(rsp, th).lineTo(doc.page.width, th).stroke();
 
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
     doc.fontSize(8).text('(E/O.E)', rsp, th + 6, { width: rw, align: 'right' });
     th = th + m / 1.5;
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
+    doc.moveTo(rsp, th).lineTo(doc.page.width, th).stroke();
 
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
-    doc.text('GST payable on reverse charge', rsp, th + 4);
-    doc.text('N/A', rsp, th + 4, { width: rw, align: 'right' });
+    doc.text('GST payable on reverse charge', rsp + m / 2, th + 4);
+    doc.text(tableData.billDetails.reverseChargeGst || 'N/A', rsp, th + 4, {
+      width: rw,
+      align: 'right',
+    });
     th = th + m / 1.5;
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
+    doc.moveTo(rsp, th).lineTo(doc.page.width, th).stroke();
 
     doc
       .fontSize(7)
@@ -569,9 +590,9 @@ export class Pdf3Service {
         align: 'center',
       });
     th = th + m * 1.5;
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
-    th = doc.page.height - m;
-    doc.moveTo(rsp, th).lineTo(th, th).stroke();
+    doc.moveTo(rsp, th).lineTo(doc.page.width, th).stroke();
+    th += m * 2;
+    doc.moveTo(rsp, th).lineTo(doc.page.width, th).stroke();
     doc
       .fontSize(8)
       .fillColor('black')
@@ -579,12 +600,7 @@ export class Pdf3Service {
         width: rw,
         align: 'center',
       });
+    th += m;
+    doc.moveTo(0, th).lineTo(doc.page.width, th).stroke();
   }
-
-  // generate(doc, tableData: TableDataType) {
-  //   this.generateHeader(doc, tableData);
-  //   this.generateInvoiceData(doc, tableData);
-  //   this.generateTable(doc, 300, tableData);
-  //   this.generateFooter(doc, 300, tableData);
-  // }
 }

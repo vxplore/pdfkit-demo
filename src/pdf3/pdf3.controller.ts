@@ -218,7 +218,7 @@ const data = {
       total: 120,
     },
     {
-      slNo: 15,
+      slNo: 14,
       name: 'Automatic saw',
       desc: 'Claw hammer (Black and Chrome)',
       HSN: '1234',
@@ -283,6 +283,17 @@ const data = {
       total: 120,
     },
   ],
+  billDetails: {
+    totalQuantity: 180,
+    totalRate: 1800,
+    totalTaxableValue: 1800,
+    igst: 180,
+    totalTax: 180,
+    totalAmount: 1800,
+    grandTotal: 1980,
+    grandTotalInWords: 'One hundred eighty eight rupees only',
+    reverseChargeGst: 0,
+  },
 };
 export type TableDataType = typeof data;
 
@@ -299,70 +310,91 @@ export class Pdf3Controller {
       companyInfo: data.companyInfo,
       customerInfo: data.customerInfo,
       invoiceDetails: data.invoiceDetails,
+      billDetails: data.billDetails,
     };
 
     const bottomMargin = 20;
 
-    const firstPageTableHeight =
-      doc.page.height - this.pdfService.invoiceHeight;
+    const headerHeight = this.pdfService.headerHeight;
+    const invoiceHeight = this.pdfService.invoiceHeight;
+    const footerHeight = this.pdfService.footerHeight;
 
-    const otherPageTableHeight = doc.page.height - this.pdfService.headerHeight;
+    const firstPageTableHeight = doc.page.height - invoiceHeight - bottomMargin;
+
+    const otherPageTableHeight =
+      doc.page.height - headerHeight - footerHeight - bottomMargin;
 
     const nameColWidth = 240;
     let height = 0;
-    let pageConfig: {
+    const pageConfig: {
       itemStartCount: number;
       itemEndCount: number;
       height: number;
       page: number;
+      showFooter?: boolean;
+      showInvoice?: boolean;
     }[] = [];
     let page = 1;
     let itemStartCount = 0;
-    data.products.forEach((item, i) => {
-      height +=
-        doc.heightOfString(item.desc ? item.desc : item.name, {
-          width: nameColWidth,
-        }) + 10;
 
-      if (page === 1 && height > firstPageTableHeight) {
+    doc.fontSize(8);
+    data.products.forEach((item, i) => {
+      const descHeight = doc.heightOfString(item.desc, {
+        width: nameColWidth,
+      });
+      const nameHeight = doc.heightOfString(item.name, {
+        width: nameColWidth,
+      });
+      height += descHeight + nameHeight + 10;
+
+      if (
+        i === data.products.length - 1 &&
+        height < firstPageTableHeight - footerHeight &&
+        page === 1
+      ) {
         pageConfig.push({
           itemStartCount,
-          itemEndCount: i,
+          itemEndCount: i + 1,
+          height,
           page,
-          height: Math.floor(height),
+          showInvoice: true,
+          showFooter: true,
         });
-        itemStartCount = i;
-        height = 0;
-        ++page;
       } else {
-        if (height > otherPageTableHeight) {
+        if (
+          height > firstPageTableHeight - bottomMargin &&
+          height < firstPageTableHeight &&
+          page === 1
+        ) {
           pageConfig.push({
             itemStartCount,
             itemEndCount: i,
-            page,
             height: Math.floor(height),
+            page,
+            showInvoice: true,
+            showFooter: false,
           });
-          itemStartCount = i;
           height = 0;
+          itemStartCount = i;
           ++page;
-        }
-        if (i === data.products.length - 1) {
+        } else if (i === data.products.length - 1) {
           pageConfig.push({
             itemStartCount,
-            itemEndCount: data.products.length,
-            height,
+            itemEndCount: i + 1,
+            height: Math.floor(height),
             page,
+            showInvoice: false,
+            showFooter: true,
           });
         }
       }
     });
 
     console.log({
-      header: this.pdfService.headerHeight,
-      invoice: this.pdfService.invoiceHeight,
       first: firstPageTableHeight,
       other: otherPageTableHeight,
-      total: doc.page.height,
+      height,
+      length: data.products.length,
       pageConfig,
     });
     pageConfig.forEach((d, i) => {
@@ -370,32 +402,32 @@ export class Pdf3Controller {
         ...tableMandatoryData,
         products: data.products.slice(d.itemStartCount, d.itemEndCount),
       };
-      if (d.page === 1) {
-        this.pdfService.generateHeader(doc, tableData);
-        this.pdfService.generateInvoiceData(doc, tableData);
-        this.pdfService.generateTable(
+
+      this.pdfService.generateHeader(doc, tableData);
+
+      d.showInvoice && this.pdfService.generateInvoiceData(doc, tableData);
+
+      const ts = d.showInvoice
+        ? this.pdfService.invoiceHeight
+        : this.pdfService.headerHeight;
+      const th = d.height + this.pdfService.tableHeaderHeight;
+      this.pdfService.generateTable(doc, ts, th, tableData, d.showFooter);
+
+      d.showFooter &&
+        this.pdfService.generateFooter(
           doc,
-          this.pdfService.invoiceHeight,
-          d.height,
+          d.showInvoice
+            ? this.pdfService.invoiceHeight + d.height + bottomMargin * 5
+            : this.pdfService.headerHeight + d.height + bottomMargin * 5,
           tableData,
         );
-      } else {
-        this.pdfService.generateHeader(doc, tableData);
-        this.pdfService.generateTable(
-          doc,
-          this.pdfService.headerHeight,
-          d.height,
-          tableData,
-        );
-        // this.pdfService.generateFooter(doc, d.height, tableData);
-      }
 
       i !== pageConfig.length - 1 && doc.addPage();
     });
 
     const range = doc.bufferedPageRange();
-    let startPage = range.start;
-    let endPage = range.start + range.count;
+    const startPage = range.start;
+    const endPage = range.start + range.count;
     for (let i = startPage; i < endPage; i++) {
       doc.switchToPage(i);
       doc.fillColor('#666').text(`Page ${i + 1}`, 10, doc.page.height - 16, {

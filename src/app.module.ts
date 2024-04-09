@@ -8,7 +8,6 @@ import { Pdf3Controller } from './pdf3/pdf3.controller';
 import { Pdf3Service } from './pdf3/pdf3.service';
 import { PdfTestController } from './pdftest.controller';
 import { Pdf4Controller } from './pdf4/pdf4.controller';
-import { Pdf4Service } from './pdf4/pdf4.service';
 
 @Module({
   imports: [],
@@ -20,6 +19,6 @@ import { Pdf4Service } from './pdf4/pdf4.service';
     PdfTestController,
     Pdf4Controller,
   ],
-  providers: [AppService, Pdf2Service, Pdf3Service, Pdf4Service],
+  providers: [AppService, Pdf2Service, Pdf3Service],
 })
 export class AppModule {}
